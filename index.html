@@ -4,15 +4,59 @@
   <meta charset="utf-8">
   <title>Xem mô hình 3D</title>
   <script type="module" src="https://cdnjs.cloudflare.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+  <style>
+    body { margin: 0; font-family: sans-serif; }
+    #menu { padding: 10px; background: #f5f5f5; display: flex; flex-wrap: wrap; }
+    #menu button {
+      margin: 4px; padding: 8px 14px; border: none;
+      border-radius: 6px; background: #333; color: white; cursor: pointer;
+    }
+    #menu button.active { background: #007bff; }
+    model-viewer { width: 100%; height: 85vh; background: #eee; }
+  </style>
 </head>
-<body style="margin:0;">
-  <model-viewer
-    src="Model.glb"
-    alt="Mô hình 3D"
-    auto-rotate
-    camera-controls
-    ar
-    style="width: 100%; height: 100vh; background:#f0f0f0;">
-  </model-viewer>
+<body>
+
+  <div id="menu">Đang tải danh sách model...</div>
+  <model-viewer id="viewer" alt="Mô hình 3D" auto-rotate camera-controls ar></model-viewer>
+
+  <script>
+    // ĐỔI 2 dòng dưới đây thành đúng tên GitHub username và tên repo của bạn
+    const OWNER = "ten-tai-khoan-github";
+    const REPO = "my-3d-viewer";
+    const FOLDER = "models";
+
+    async function taiDanhSach() {
+      const menu = document.getElementById('menu');
+      try {
+        const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${FOLDER}`);
+        const files = await res.json();
+        menu.innerHTML = "";
+
+        const glbFiles = files.filter(f => f.name.toLowerCase().endsWith('.glb'));
+
+        glbFiles.forEach((file, index) => {
+          const btn = document.createElement('button');
+          btn.textContent = file.name.replace('.glb', '');
+          btn.onclick = () => chonModel(file.download_url, btn);
+          if (index === 0) { btn.classList.add('active'); chonModel(file.download_url, btn); }
+          menu.appendChild(btn);
+        });
+
+        if (glbFiles.length === 0) menu.textContent = "Chưa có file .glb nào trong folder models.";
+      } catch (e) {
+        menu.textContent = "Không tải được danh sách model. Kiểm tra lại tên repo/owner.";
+      }
+    }
+
+    function chonModel(url, nutBam) {
+      document.getElementById('viewer').src = url;
+      document.querySelectorAll('#menu button').forEach(b => b.classList.remove('active'));
+      nutBam.classList.add('active');
+    }
+
+    taiDanhSach();
+  </script>
+
 </body>
 </html>
