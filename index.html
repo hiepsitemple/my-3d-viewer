@@ -3,15 +3,14 @@
 <head>
   <meta charset="utf-8">
   <title>Xem mô hình 3D</title>
-  <script type="module" src="https://cdnjs.cloudflare.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+  <script type="module" src="https://cdnjs.cloudflare.com/ajax/libs/model-viewer/4.3.0/model-viewer.min.js"></script>
   <style>
     body { margin: 0; font-family: sans-serif; }
-    #menu { padding: 10px; background: #f5f5f5; display: flex; flex-wrap: wrap; }
-    #menu button {
-      margin: 4px; padding: 8px 14px; border: none;
-      border-radius: 6px; background: #333; color: white; cursor: pointer;
+    #menu { padding: 10px; background: #f5f5f5; display: flex; flex-wrap: wrap; gap: 10px; }
+    #menu label {
+      padding: 6px 12px; background: #fff; border: 1px solid #ccc;
+      border-radius: 6px; cursor: pointer; user-select: none;
     }
-    #menu button.active { background: #007bff; }
     model-viewer { width: 100%; height: 85vh; background: #eee; }
   </style>
 </head>
@@ -28,39 +27,63 @@
     min-field-of-view="5deg"
     bounds="tight">
   </model-viewer>
+
   <script>
-    // ĐỔI 2 dòng dưới đây thành đúng tên GitHub username và tên repo của bạn
     const OWNER = "hiepsitemple";
     const REPO = "my-3d-viewer";
     const FOLDER = "models";
+    const KHOANG_CACH = 2; // khoảng cách (mét) giữa các model, chỉnh theo kích thước model của bạn
+
+    let danhSachFile = [];
 
     async function taiDanhSach() {
       const menu = document.getElementById('menu');
       try {
         const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${FOLDER}`);
         const files = await res.json();
+        danhSachFile = files.filter(f => f.name.toLowerCase().endsWith('.glb'));
         menu.innerHTML = "";
 
-        const glbFiles = files.filter(f => f.name.toLowerCase().endsWith('.glb'));
-
-        glbFiles.forEach((file, index) => {
-          const btn = document.createElement('button');
-          btn.textContent = file.name.replace('.glb', '');
-          btn.onclick = () => chonModel(file.download_url, btn);
-          if (index === 0) { btn.classList.add('active'); chonModel(file.download_url, btn); }
-          menu.appendChild(btn);
+        danhSachFile.forEach((file, index) => {
+          const label = document.createElement('label');
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.value = file.download_url;
+          checkbox.onchange = capNhatScene;
+          if (index === 0) checkbox.checked = true; // tự chọn model đầu tiên
+          label.appendChild(checkbox);
+          label.append(' ' + file.name.replace('.glb', ''));
+          menu.appendChild(label);
         });
 
-        if (glbFiles.length === 0) menu.textContent = "Chưa có file .glb nào trong folder models.";
+        capNhatScene();
       } catch (e) {
-        menu.textContent = "Không tải được danh sách model. Kiểm tra lại tên repo/owner.";
+        menu.textContent = "Không tải được danh sách model.";
       }
     }
 
-    function chonModel(url, nutBam) {
-      document.getElementById('viewer').src = url;
-      document.querySelectorAll('#menu button').forEach(b => b.classList.remove('active'));
-      nutBam.classList.add('active');
+    function capNhatScene() {
+      const daChon = [...document.querySelectorAll('#menu input:checked')].map(cb => cb.value);
+      const viewer = document.getElementById('viewer');
+
+      // Xóa hết extra-model cũ
+      viewer.querySelectorAll('extra-model').forEach(el => el.remove());
+
+      if (daChon.length === 0) {
+        viewer.removeAttribute('src');
+        return;
+      }
+
+      // Model đầu tiên làm base (src chính)
+      viewer.src = daChon[0];
+
+      // Các model còn lại thêm làm extra-model, xếp cách nhau theo trục X
+      for (let i = 1; i < daChon.length; i++) {
+        const extra = document.createElement('extra-model');
+        extra.setAttribute('src', daChon[i]);
+        extra.setAttribute('offset', `${KHOANG_CACH * i}m 0 0`);
+        viewer.appendChild(extra);
+      }
     }
 
     taiDanhSach();
