@@ -18,8 +18,16 @@
 <body>
 
   <div id="menu">Đang tải danh sách model...</div>
-  <model-viewer id="viewer" alt="Mô hình 3D" auto-rotate camera-controls ar></model-viewer>
-
+  <model-viewer 
+    id="viewer" 
+    alt="Mô hình 3D" 
+    auto-rotate 
+    camera-controls 
+    ar
+    min-camera-orbit="auto auto 0.1m"
+    min-field-of-view="5deg"
+    bounds="tight">
+  </model-viewer>
   <script>
     // ĐỔI 2 dòng dưới đây thành đúng tên GitHub username và tên repo của bạn
     const OWNER = "hiepsitemple";
